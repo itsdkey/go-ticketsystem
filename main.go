@@ -1,41 +1,67 @@
 package main
 
-import (
-	"net/http"
-	"os"
+import "fmt"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
-)
+const conferenceTickets = 50
+
+var conferenceName = "Go Conference"
+var remainingTickets uint = conferenceTickets
+var bookings []string
 
 func main() {
 
-	e := echo.New()
+	greetUsers(conferenceName, remainingTickets)
 
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
+	for remainingTickets > 0 {
+		userName, email, userTickets := getUserInput()
+		if !validateUserTickets(userTickets, remainingTickets) {
+			continue
+		}
 
-	e.GET("/", func(c echo.Context) error {
-		return c.HTML(http.StatusOK, "Hello, Docker! <3")
-	})
+		remainingTickets = createBooking(remainingTickets, userTickets, userName, email)
 
-	e.GET("/health", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, struct{ Status string }{Status: "OK"})
-	})
-
-	httpPort := os.Getenv("APP_PORT")
-	if httpPort == "" {
-		httpPort = "8080"
+		if remainingTickets == 0 {
+			fmt.Printf("No more tickets\n")
+			break
+		}
 	}
 
-	e.Logger.Fatal(e.Start(":" + httpPort))
 }
 
-// Simple implementation of an integer minimum
-// Adapted from: https://gobyexample.com/testing-and-benchmarking
-func IntMin(a, b int) int {
-	if a < b {
-		return a
+func greetUsers(conferenceName string, remainingTickets uint) {
+	fmt.Printf("Welcome to %v booking application\n", conferenceName)
+	fmt.Printf("We have %v tickets still available\n", remainingTickets)
+}
+
+func getUserInput() (string, string, uint) {
+	var userName string
+	var userTickets uint
+	var email string
+
+	fmt.Printf("Please provide <name> <email> <number of tickets>:\n")
+	fmt.Scanf("%v %v %d", &userName, &email, &userTickets)
+	return userName, email, userTickets
+}
+
+func validateUserTickets(userTickets, remainingTickets uint) bool {
+	isValid := true
+	switch {
+	case userTickets <= 0:
+		fmt.Println("Please provide a postive number of tickets!")
+		isValid = false
+	case userTickets > remainingTickets:
+		fmt.Println("You cannot book that many tickets!")
+		isValid = false
 	}
-	return b
+	return isValid
+}
+
+func createBooking(remainingTickets uint, userTickets uint, userName string, email string) uint {
+	remainingTickets -= userTickets
+	bookings = append(bookings, userName)
+
+	fmt.Printf("user: %v (%v) - tickets: %v\n", userName, email, userTickets)
+	fmt.Printf("bookings: %v\n", bookings)
+	fmt.Printf("remaining tickets: %v\n", remainingTickets)
+	return remainingTickets
 }
